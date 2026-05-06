@@ -1,5 +1,17 @@
 const { useState, useEffect, useRef, useCallback } = React;
 
+// PWA install prompt
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  window.dispatchEvent(new Event('pwainstallready'));
+});
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+
 async function fetchRandomCreature(cmc) {
   const q = encodeURIComponent(`t:creature cmc=${cmc} legal:vintage -is:digital`);
   const url = `https://api.scryfall.com/cards/random?q=${q}`;
@@ -466,6 +478,67 @@ function PlayerPanel({ flipped, onBack, fitCap }) {
   );
 }
 
+function InstallButton() {
+  const [canInstall, setCanInstall] = useState(!!deferredInstallPrompt);
+  const [installed, setInstalled] = useState(
+    window.matchMedia('(display-mode: standalone)').matches
+  );
+
+  useEffect(() => {
+    const onReady = () => setCanInstall(true);
+    window.addEventListener('pwainstallready', onReady);
+    const mq = window.matchMedia('(display-mode: standalone)');
+    const onChange = (e) => setInstalled(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => {
+      window.removeEventListener('pwainstallready', onReady);
+      mq.removeEventListener('change', onChange);
+    };
+  }, []);
+
+  if (installed || !canInstall) return null;
+
+  const handleInstall = async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const result = await deferredInstallPrompt.userChoice;
+    if (result.outcome === 'accepted') setInstalled(true);
+    deferredInstallPrompt = null;
+    setCanInstall(false);
+  };
+
+  return (
+    <button
+      onClick={handleInstall}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '10px 20px',
+        borderRadius: 999,
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid var(--line)',
+        color: 'var(--text-dim)',
+        fontSize: 13, fontWeight: 500,
+        cursor: 'pointer',
+        transition: 'border-color 200ms ease, color 200ms ease',
+      }}
+      onPointerEnter={e => {
+        e.currentTarget.style.borderColor = 'var(--accent)';
+        e.currentTarget.style.color = 'var(--text)';
+      }}
+      onPointerLeave={e => {
+        e.currentTarget.style.borderColor = 'var(--line)';
+        e.currentTarget.style.color = 'var(--text-dim)';
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3 12h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+      Install App
+    </button>
+  );
+}
+
 function StartScreen({ onPick }) {
   const Mode = ({ label, onClick, accent }) => (
     <button
@@ -519,6 +592,7 @@ function StartScreen({ onPick }) {
         <Mode label="Solo" onClick={() => onPick('solo')} accent="oklch(0.78 0.13 180)" />
         <Mode label="Two Players" onClick={() => onPick('split')} accent="oklch(0.78 0.13 145)" />
       </div>
+      <InstallButton />
     </div>
   );
 }
