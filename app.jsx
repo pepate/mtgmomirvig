@@ -158,59 +158,61 @@ function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack, 
       )}
 
       {open ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Pill onClick={dec} ariaLabel="Decrease">
-            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
-              <path d="M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </Pill>
-          <Pill onClick={submit} ariaLabel="Summon" accent big>
-            {loading ? (
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-                <path d="M11 3 A8 8 0 0 1 19 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <animateTransform attributeName="transform" type="rotate" from="0 11 11" to="360 11 11" dur="0.9s" repeatCount="indefinite" />
-                </path>
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Pill onClick={dec} ariaLabel="Decrease">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8H13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
-            ) : cmc}
-          </Pill>
-          <Pill onClick={inc} ariaLabel="Increase">
-            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
-              <path d="M3 8H13M8 3V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </Pill>
-        </div>
-        <button
-          onClick={(e) => { e.stopPropagation(); onToggleAutoShow(); }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '7px 12px',
-            borderRadius: 999,
-            background: 'rgba(20,30,32,0.92)',
-            border: `1px solid ${autoShow ? 'var(--accent)' : 'var(--line)'}`,
-            color: autoShow ? 'var(--accent)' : 'var(--text-dim)',
-            fontSize: 10, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase',
-            backdropFilter: 'blur(8px)',
-            cursor: 'pointer',
-          }}
-        >
-          <div style={{
-            width: 14, height: 14, borderRadius: 3,
-            border: `1.5px solid ${autoShow ? 'var(--accent)' : 'rgba(255,255,255,0.3)'}`,
-            background: autoShow ? 'var(--accent)' : 'transparent',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            {autoShow && (
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <path d="M2 5L4 7L8 3" stroke="#062019" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </Pill>
+            <Pill onClick={submit} ariaLabel="Summon" accent big>
+              {loading ? (
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                  <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                  <path d="M11 3 A8 8 0 0 1 19 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <animateTransform attributeName="transform" type="rotate" from="0 11 11" to="360 11 11" dur="0.9s" repeatCount="indefinite" />
+                  </path>
+                </svg>
+              ) : cmc}
+            </Pill>
+            <Pill onClick={inc} ariaLabel="Increase">
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8H13M8 3V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
-            )}
+            </Pill>
           </div>
-          Auto-show
-        </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleAutoShow(); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 12px',
+              borderRadius: 999,
+              background: 'rgba(20,30,32,0.92)',
+              border: `1px solid ${autoShow ? 'var(--accent)' : 'var(--line)'}`,
+              color: autoShow ? 'var(--accent)' : 'var(--text-dim)',
+              fontSize: 10, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase',
+              backdropFilter: 'blur(8px)',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{
+              width: 14, height: 14, borderRadius: 3,
+              border: `1.5px solid ${autoShow ? 'var(--accent)' : 'rgba(255,255,255,0.3)'}`,
+              background: autoShow ? 'var(--accent)' : 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {autoShow && (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M2 5L4 7L8 3" stroke="#062019" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+            Auto-show
+          </button>
+        </>
       ) : (
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => { if (!loading) setOpen(true); }}
           aria-label="Open summon controls"
           style={{
             width: 56, height: 56,
@@ -220,16 +222,25 @@ function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack, 
             color: '#062019',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 8px 20px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08) inset',
-            cursor: 'pointer',
+            cursor: loading ? 'wait' : 'pointer',
             transition: 'transform 100ms ease',
           }}
           onPointerDown={e => e.currentTarget.style.transform = 'scale(0.94)'}
           onPointerUp={e => e.currentTarget.style.transform = 'scale(1)'}
           onPointerLeave={e => e.currentTarget.style.transform = 'scale(1)'}
         >
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M11 4V18M4 11H18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-          </svg>
+          {loading ? (
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+              <path d="M11 3 A8 8 0 0 1 19 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <animateTransform attributeName="transform" type="rotate" from="0 11 11" to="360 11 11" dur="0.9s" repeatCount="indefinite" />
+              </path>
+            </svg>
+          ) : (
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M11 4V18M4 11H18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+          )}
         </button>
       )}
     </div>

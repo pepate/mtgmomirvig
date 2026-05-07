@@ -1,4 +1,4 @@
-const CACHE = 'momir-v2';
+const CACHE = 'momir-v3';
 const SHELL = [
   './',
   './index.html',
