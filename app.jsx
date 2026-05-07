@@ -28,11 +28,11 @@ async function fetchRandomCreature(cmc) {
   return res.json();
 }
 
-function getImageUrl(card) {
+function getImageUrl(card, size = 'normal') {
   if (!card) return null;
-  if (card.image_uris) return card.image_uris.normal || card.image_uris.large;
+  if (card.image_uris) return card.image_uris[size] || card.image_uris.normal || card.image_uris.large;
   if (card.card_faces && card.card_faces[0].image_uris) {
-    return card.card_faces[0].image_uris.normal || card.card_faces[0].image_uris.large;
+    return card.card_faces[0].image_uris[size] || card.card_faces[0].image_uris.normal || card.card_faces[0].image_uris.large;
   }
   return null;
 }
@@ -47,7 +47,7 @@ function Logo({ size = 28 }) {
   );
 }
 
-function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack }) {
+function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack, autoShow, onToggleAutoShow }) {
   const [open, setOpen] = useState(false);
   const [cmc, setCmc] = useState(lastCmc ?? 1);
 
@@ -180,6 +180,34 @@ function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack }
             </svg>
           </Pill>
         </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleAutoShow(); }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 12px',
+            borderRadius: 999,
+            background: 'rgba(20,30,32,0.92)',
+            border: `1px solid ${autoShow ? 'var(--accent)' : 'var(--line)'}`,
+            color: autoShow ? 'var(--accent)' : 'var(--text-dim)',
+            fontSize: 10, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase',
+            backdropFilter: 'blur(8px)',
+            cursor: 'pointer',
+          }}
+        >
+          <div style={{
+            width: 14, height: 14, borderRadius: 3,
+            border: `1.5px solid ${autoShow ? 'var(--accent)' : 'rgba(255,255,255,0.3)'}`,
+            background: autoShow ? 'var(--accent)' : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {autoShow && (
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 5L4 7L8 3" stroke="#062019" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </div>
+          Auto-show
+        </button>
       ) : (
         <button
           onClick={() => setOpen(true)}
@@ -208,10 +236,24 @@ function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack }
   );
 }
 
-function CreatureCard({ creature, onTap, onRemove, widthCss }) {
+function CreatureCard({ creature, onTap, onRemove, onShowFullscreen, widthCss }) {
   const img = getImageUrl(creature.card);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const clickTimer = useRef(null);
   const w = widthCss || 'clamp(140px, 22vh, 220px)';
+
+  const handleClick = () => {
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current);
+      clickTimer.current = null;
+      onShowFullscreen();
+    } else {
+      clickTimer.current = setTimeout(() => {
+        clickTimer.current = null;
+        onTap();
+      }, 250);
+    }
+  };
 
   return (
     <div
@@ -227,7 +269,7 @@ function CreatureCard({ creature, onTap, onRemove, widthCss }) {
       }}
     >
       <button
-        onClick={onTap}
+        onClick={handleClick}
         style={{
           width: '100%',
           height: '100%',
@@ -304,7 +346,7 @@ function CreatureCard({ creature, onTap, onRemove, widthCss }) {
   );
 }
 
-function Battlefield({ creatures, onTap, onRemove, flipped, empty, fitCap }) {
+function Battlefield({ creatures, onTap, onRemove, onShowFullscreen, flipped, empty, fitCap }) {
   const scrollRef = useRef(null);
   const containerRef = useRef(null);
   const prevLen = useRef(creatures.length);
@@ -397,6 +439,7 @@ function Battlefield({ creatures, onTap, onRemove, flipped, empty, fitCap }) {
               creature={c}
               onTap={() => onTap(c.id)}
               onRemove={() => onRemove(c.id)}
+              onShowFullscreen={() => onShowFullscreen(c.card)}
               widthCss={widthCss}
             />
           ))}
@@ -407,11 +450,14 @@ function Battlefield({ creatures, onTap, onRemove, flipped, empty, fitCap }) {
   );
 }
 
-function PlayerPanel({ flipped, onBack, fitCap }) {
+function PlayerPanel({ flipped, onBack, fitCap, onShowCard }) {
   const [creatures, setCreatures] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastCmc, setLastCmc] = useState(null);
+  const [autoShow, setAutoShow] = useState(false);
+  const autoShowRef = useRef(false);
+  autoShowRef.current = autoShow;
 
   const summon = useCallback(async (cmc) => {
     setLoading(true);
@@ -421,6 +467,7 @@ function PlayerPanel({ flipped, onBack, fitCap }) {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       setCreatures(prev => [...prev, { id, card, cmc, tapped: false }]);
       setLastCmc(cmc);
+      if (autoShowRef.current) onShowCard(card);
     } catch (e) {
       setError(e.message || 'Could not fetch creature');
     } finally {
@@ -457,6 +504,7 @@ function PlayerPanel({ flipped, onBack, fitCap }) {
         creatures={creatures}
         onTap={tap}
         onRemove={remove}
+        onShowFullscreen={onShowCard}
         flipped={flipped}
         empty={true}
         fitCap={fitCap}
@@ -468,6 +516,8 @@ function PlayerPanel({ flipped, onBack, fitCap }) {
         lastCmc={lastCmc}
         flipped={flipped}
         onBack={onBack}
+        autoShow={autoShow}
+        onToggleAutoShow={() => setAutoShow(v => !v)}
       />
       {hasTapped && (
         <button
@@ -624,8 +674,42 @@ function StartScreen({ onPick }) {
   );
 }
 
+function CardOverlay({ card, onClose }) {
+  if (!card) return null;
+  const img = getImageUrl(card, 'large');
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        background: 'rgba(0,0,0,0.85)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+      }}
+    >
+      {img && (
+        <img
+          src={img}
+          alt={card.name}
+          style={{
+            maxHeight: '90vh',
+            maxWidth: '90vw',
+            borderRadius: 16,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 function App() {
   const [mode, setMode] = useState(null);
+  const [overlayCard, setOverlayCard] = useState(null);
 
   if (!mode) return <StartScreen onPick={setMode} />;
 
@@ -636,7 +720,9 @@ function App() {
           flipped={false}
           onBack={() => setMode(null)}
           fitCap={4}
+          onShowCard={setOverlayCard}
         />
+        <CardOverlay card={overlayCard} onClose={() => setOverlayCard(null)} />
       </div>
     );
   }
@@ -657,6 +743,7 @@ function App() {
           flipped={true}
           onBack={() => setMode(null)}
           fitCap={6}
+          onShowCard={setOverlayCard}
         />
       </div>
 
@@ -675,8 +762,10 @@ function App() {
           flipped={false}
           onBack={() => setMode(null)}
           fitCap={6}
+          onShowCard={setOverlayCard}
         />
       </div>
+      <CardOverlay card={overlayCard} onClose={() => setOverlayCard(null)} />
     </div>
   );
 }
