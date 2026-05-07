@@ -723,8 +723,8 @@ function CardOverlay({ card, onClose, dualView }) {
           src={img}
           alt={card.name}
           style={{
-            maxHeight: dualView ? '44vh' : '90vh',
-            maxWidth: dualView ? '42vw' : '90vw',
+            maxHeight: '90vh',
+            maxWidth: dualView ? '46vw' : '90vw',
             borderRadius: 16,
             boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
           }}
@@ -735,8 +735,8 @@ function CardOverlay({ card, onClose, dualView }) {
           src={img}
           alt={card.name}
           style={{
-            maxHeight: '44vh',
-            maxWidth: '42vw',
+            maxHeight: '90vh',
+            maxWidth: '46vw',
             borderRadius: 16,
             boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
             transform: 'rotate(180deg)',
