@@ -208,17 +208,9 @@ function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack }
   );
 }
 
-function CreatureCard({ creature, onTap, onRemove, isNew, widthCss }) {
+function CreatureCard({ creature, onTap, onRemove, widthCss }) {
   const img = getImageUrl(creature.card);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [entered, setEntered] = useState(!isNew);
-
-  useEffect(() => {
-    if (isNew) {
-      requestAnimationFrame(() => setEntered(true));
-    }
-  }, [isNew]);
-
   const w = widthCss || 'clamp(140px, 22vh, 220px)';
 
   return (
@@ -228,9 +220,8 @@ function CreatureCard({ creature, onTap, onRemove, isNew, widthCss }) {
         flexShrink: 0,
         width: w,
         aspectRatio: '63 / 88',
-        transition: 'transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 280ms ease, width 200ms ease',
-        transform: `${entered ? 'scale(1)' : 'scale(0.7) translateY(20px)'} ${creature.tapped ? 'rotate(90deg)' : 'rotate(0deg)'}`,
-        opacity: entered ? 1 : 0,
+        transition: 'transform 150ms ease, width 200ms ease',
+        transform: creature.tapped ? 'rotate(90deg)' : 'rotate(0deg)',
         transformOrigin: 'center center',
         marginRight: creature.tapped ? `calc(${w} * 0.18)` : 0,
       }}
@@ -330,7 +321,7 @@ function Battlefield({ creatures, onTap, onRemove, flipped, empty, fitCap }) {
     return () => ro.disconnect();
   }, []);
 
-  const PAD_Y = 56;
+  const PAD_Y = 90;
   const PAD_X = 56;
   const GAP = 16;
   const TAPPED_EXTRA = 0.18;
@@ -406,7 +397,6 @@ function Battlefield({ creatures, onTap, onRemove, flipped, empty, fitCap }) {
               creature={c}
               onTap={() => onTap(c.id)}
               onRemove={() => onRemove(c.id)}
-              isNew={c.isNew}
               widthCss={widthCss}
             />
           ))}
@@ -429,11 +419,8 @@ function PlayerPanel({ flipped, onBack, fitCap }) {
     try {
       const card = await fetchRandomCreature(cmc);
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      setCreatures(prev => [...prev, { id, card, cmc, tapped: false, isNew: true }]);
+      setCreatures(prev => [...prev, { id, card, cmc, tapped: false }]);
       setLastCmc(cmc);
-      setTimeout(() => {
-        setCreatures(prev => prev.map(c => c.id === id ? { ...c, isNew: false } : c));
-      }, 400);
     } catch (e) {
       setError(e.message || 'Could not fetch creature');
     } finally {
@@ -449,6 +436,12 @@ function PlayerPanel({ flipped, onBack, fitCap }) {
     setCreatures(prev => prev.filter(c => c.id !== id));
   }, []);
 
+  const untapAll = useCallback(() => {
+    setCreatures(prev => prev.map(c => c.tapped ? { ...c, tapped: false } : c));
+  }, []);
+
+  const hasTapped = creatures.some(c => c.tapped);
+
   return (
     <div style={{
       width: '100%',
@@ -456,6 +449,8 @@ function PlayerPanel({ flipped, onBack, fitCap }) {
       minHeight: 0,
       minWidth: 0,
       position: 'relative',
+      display: 'flex',
+      flexDirection: 'column',
       background: 'radial-gradient(ellipse at center, rgba(40,180,180,0.06) 0%, transparent 70%)',
     }}>
       <Battlefield
@@ -474,6 +469,38 @@ function PlayerPanel({ flipped, onBack, fitCap }) {
         flipped={flipped}
         onBack={onBack}
       />
+      {hasTapped && (
+        <button
+          onClick={untapAll}
+          aria-label="Untap all creatures"
+          style={{
+            position: 'absolute',
+            ...(flipped
+              ? { top: 14, left: 14, transform: 'rotate(180deg)' }
+              : { bottom: 14, right: 14 }),
+            zIndex: 40,
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '10px 16px',
+            borderRadius: 999,
+            background: 'rgba(20,30,32,0.92)',
+            border: '1px solid rgba(255,255,255,0.14)',
+            color: 'var(--text-dim)',
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 6px 16px rgba(0,0,0,0.5)',
+            cursor: 'pointer',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M4 2L2 5L5 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M2.5 5A5.5 5.5 0 1 1 3.5 11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          Untap All
+        </button>
+      )}
     </div>
   );
 }
