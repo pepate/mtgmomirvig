@@ -250,21 +250,7 @@ function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack, 
 function CreatureCard({ creature, onTap, onRemove, onShowFullscreen, widthCss }) {
   const img = getImageUrl(creature.card);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const clickTimer = useRef(null);
   const w = widthCss || 'clamp(140px, 22vh, 220px)';
-
-  const handleClick = () => {
-    if (clickTimer.current) {
-      clearTimeout(clickTimer.current);
-      clickTimer.current = null;
-      onShowFullscreen();
-    } else {
-      clickTimer.current = setTimeout(() => {
-        clickTimer.current = null;
-        onTap();
-      }, 250);
-    }
-  };
 
   return (
     <div
@@ -280,7 +266,7 @@ function CreatureCard({ creature, onTap, onRemove, onShowFullscreen, widthCss })
       }}
     >
       <button
-        onClick={handleClick}
+        onClick={onTap}
         style={{
           width: '100%',
           height: '100%',
@@ -352,6 +338,36 @@ function CreatureCard({ creature, onTap, onRemove, onShowFullscreen, widthCss })
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
           <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
         </svg>
+      </button>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); onShowFullscreen(); }}
+        aria-label="Show card details"
+        style={{
+          position: 'absolute',
+          bottom: 8,
+          left: '50%',
+          marginLeft: -13,
+          width: 26,
+          height: 26,
+          borderRadius: '50%',
+          background: 'rgba(15,22,25,0.85)',
+          backdropFilter: 'blur(4px)',
+          border: '1px solid rgba(255,255,255,0.18)',
+          color: 'var(--text)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+          transform: creature.tapped ? 'rotate(-90deg)' : 'none',
+          zIndex: 2,
+          fontFamily: 'Fraunces',
+          fontSize: 14,
+          fontWeight: 700,
+          fontStyle: 'italic',
+        }}
+      >
+        i
       </button>
     </div>
   );
@@ -685,7 +701,7 @@ function StartScreen({ onPick }) {
   );
 }
 
-function CardOverlay({ card, onClose }) {
+function CardOverlay({ card, onClose, dualView }) {
   if (!card) return null;
   const img = getImageUrl(card, 'large');
   return (
@@ -698,7 +714,7 @@ function CardOverlay({ card, onClose }) {
         background: 'rgba(0,0,0,0.85)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: dualView ? 'space-evenly' : 'center',
         cursor: 'pointer',
       }}
     >
@@ -707,10 +723,23 @@ function CardOverlay({ card, onClose }) {
           src={img}
           alt={card.name}
           style={{
-            maxHeight: '90vh',
-            maxWidth: '90vw',
+            maxHeight: dualView ? '44vh' : '90vh',
+            maxWidth: dualView ? '42vw' : '90vw',
             borderRadius: 16,
             boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+          }}
+        />
+      )}
+      {img && dualView && (
+        <img
+          src={img}
+          alt={card.name}
+          style={{
+            maxHeight: '44vh',
+            maxWidth: '42vw',
+            borderRadius: 16,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+            transform: 'rotate(180deg)',
           }}
         />
       )}
@@ -776,7 +805,7 @@ function App() {
           onShowCard={setOverlayCard}
         />
       </div>
-      <CardOverlay card={overlayCard} onClose={() => setOverlayCard(null)} />
+      <CardOverlay card={overlayCard} onClose={() => setOverlayCard(null)} dualView />
     </div>
   );
 }
