@@ -47,8 +47,8 @@ function Logo({ size = 28 }) {
   );
 }
 
-function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack, autoShow, onToggleAutoShow }) {
-  const [open, setOpen] = useState(false);
+function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack, autoShow, onToggleAutoShow, defaultOpen }) {
+  const [open, setOpen] = useState(!!defaultOpen);
   const [cmc, setCmc] = useState(lastCmc ?? 1);
 
   useEffect(() => {
@@ -62,7 +62,6 @@ function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack, 
     e.stopPropagation();
     if (loading) return;
     onSummon(cmc);
-    setOpen(false);
   };
 
   const ref = useRef(null);
@@ -136,25 +135,46 @@ function FloatingControls({ onSummon, loading, error, lastCmc, flipped, onBack, 
       )}
 
       {open && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onBack(); }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '7px 12px',
-            borderRadius: 999,
-            background: 'rgba(20,30,32,0.92)',
-            border: '1px solid var(--line)',
-            color: 'var(--text-dim)',
-            fontSize: 10, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase',
-            backdropFilter: 'blur(8px)',
-            cursor: 'pointer',
-          }}
-        >
-          <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-            <path d="M9 5H1M1 5L4 2M1 5L4 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Menu
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onBack(); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 12px',
+              borderRadius: 999,
+              background: 'rgba(20,30,32,0.92)',
+              border: '1px solid var(--line)',
+              color: 'var(--text-dim)',
+              fontSize: 10, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase',
+              backdropFilter: 'blur(8px)',
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+              <path d="M9 5H1M1 5L4 2M1 5L4 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Menu
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 12px',
+              borderRadius: 999,
+              background: 'rgba(20,30,32,0.92)',
+              border: '1px solid var(--line)',
+              color: 'var(--text-dim)',
+              fontSize: 10, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase',
+              backdropFilter: 'blur(8px)',
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+              <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+            Hide
+          </button>
+        </div>
       )}
 
       {open ? (
@@ -477,13 +497,13 @@ function Battlefield({ creatures, onTap, onRemove, onShowFullscreen, flipped, em
   );
 }
 
-function PlayerPanel({ flipped, onBack, fitCap, onShowCard }) {
+function PlayerPanel({ flipped, onBack, fitCap, onShowCard, splitMode }) {
   const [creatures, setCreatures] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastCmc, setLastCmc] = useState(null);
-  const [autoShow, setAutoShow] = useState(false);
-  const autoShowRef = useRef(false);
+  const [autoShow, setAutoShow] = useState(!!splitMode);
+  const autoShowRef = useRef(!!splitMode);
   autoShowRef.current = autoShow;
 
   const summon = useCallback(async (cmc) => {
@@ -545,6 +565,7 @@ function PlayerPanel({ flipped, onBack, fitCap, onShowCard }) {
         onBack={onBack}
         autoShow={autoShow}
         onToggleAutoShow={() => setAutoShow(v => !v)}
+        defaultOpen={splitMode}
       />
       {hasTapped && (
         <button
@@ -784,6 +805,7 @@ function App() {
           onBack={() => setMode(null)}
           fitCap={6}
           onShowCard={setOverlayCard}
+          splitMode
         />
       </div>
 
@@ -803,6 +825,7 @@ function App() {
           onBack={() => setMode(null)}
           fitCap={6}
           onShowCard={setOverlayCard}
+          splitMode
         />
       </div>
       <CardOverlay card={overlayCard} onClose={() => setOverlayCard(null)} dualView />
